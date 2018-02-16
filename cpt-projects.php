@@ -13,33 +13,39 @@
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! class_exists( 'cpt_projects' ) ) {
+if ( ! class_exists( 'CPT_Projects' ) ) {
 
 	/**
-	 * Main cpt_projects class
+	 * Main CPT_Projects class
 	 *
 	 * @since	  1.0.0
 	 */
-	class cpt_projects {
+	class CPT_Projects {
 		
 		/**
-		 * @var			cpt_projects $plugin_data Holds Plugin Header Info
+		 * @var			array $plugin_data Holds Plugin Header Info
 		 * @since		1.0.0
 		 */
 		public $plugin_data;
 		
 		/**
-		 * @var			cpt_projects $admin_errors Stores all our Admin Errors to fire at once
+		 * @var			array $admin_errors Stores all our Admin Errors to fire at once
 		 * @since		1.0.0
 		 */
 		private $admin_errors;
+		
+		/**
+		 * @var         RBM_CPT_Projects Holds our CPT
+		 * @since       1.0.0
+		 */
+		public $cpt;
 
 		/**
 		 * Get active instance
 		 *
 		 * @access	  public
 		 * @since	  1.0.0
-		 * @return	  object self::$instance The one true cpt_projects
+		 * @return	  object self::$instance The one true CPT_Projects
 		 */
 		public static function instance() {
 			
@@ -61,6 +67,18 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 			if ( version_compare( get_bloginfo( 'version' ), '4.4' ) < 0 ) {
 				
 				$this->admin_errors[] = sprintf( _x( '%s requires v%s of %s or higher to be installed!', 'Outdated Dependency Error', 'cpt-projects' ), '<strong>' . $this->plugin_data['Name'] . '</strong>', '4.4', '<a href="' . admin_url( 'update-core.php' ) . '"><strong>WordPress</strong></a>' );
+				
+				if ( ! has_action( 'admin_notices', array( $this, 'admin_errors' ) ) ) {
+					add_action( 'admin_notices', array( $this, 'admin_errors' ) );
+				}
+				
+				return false;
+				
+			}
+			
+			if ( ! class_exists( 'RBM_CPTS' ) ) {
+				
+				$this->admin_errors[] = sprintf( __( '%s requires %sRBP CPTs%s to be installed!', 'cpt-projects' ), '<strong>' . $this->plugin_data['Name'] . '</strong>', '<a href="https://github.com/realbig/rbm-cpts/" target="_blank">', '</a>' );
 				
 				if ( ! has_action( 'admin_notices', array( $this, 'admin_errors' ) ) ) {
 					add_action( 'admin_notices', array( $this, 'admin_errors' ) );
@@ -94,24 +112,24 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 			// Only call this once, accessible always
 			$this->plugin_data = get_plugin_data( __FILE__ );
 
-			if ( ! defined( 'cpt_projects_VER' ) ) {
+			if ( ! defined( 'CPT_Projects_VER' ) ) {
 				// Plugin version
-				define( 'cpt_projects_VER', $this->plugin_data['Version'] );
+				define( 'CPT_Projects_VER', $this->plugin_data['Version'] );
 			}
 
-			if ( ! defined( 'cpt_projects_DIR' ) ) {
+			if ( ! defined( 'CPT_Projects_DIR' ) ) {
 				// Plugin path
-				define( 'cpt_projects_DIR', plugin_dir_path( __FILE__ ) );
+				define( 'CPT_Projects_DIR', plugin_dir_path( __FILE__ ) );
 			}
 
-			if ( ! defined( 'cpt_projects_URL' ) ) {
+			if ( ! defined( 'CPT_Projects_URL' ) ) {
 				// Plugin URL
-				define( 'cpt_projects_URL', plugin_dir_url( __FILE__ ) );
+				define( 'CPT_Projects_URL', plugin_dir_url( __FILE__ ) );
 			}
 			
-			if ( ! defined( 'cpt_projects_FILE' ) ) {
+			if ( ! defined( 'CPT_Projects_FILE' ) ) {
 				// Plugin File
-				define( 'cpt_projects_FILE', __FILE__ );
+				define( 'CPT_Projects_FILE', __FILE__ );
 			}
 
 		}
@@ -126,7 +144,7 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 		private function load_textdomain() {
 
 			// Set filter for language directory
-			$lang_dir = cpt_projects_DIR . '/languages/';
+			$lang_dir = CPT_Projects_DIR . '/languages/';
 			$lang_dir = apply_filters( 'cpt_projects_languages_directory', $lang_dir );
 
 			// Traditional WordPress plugin locale filter
@@ -162,6 +180,10 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 		 */
 		private function require_necessities() {
 			
+			// CPT functionality
+			require_once __DIR__ . '/core/cpt/class-rbm-cpt-project.php';
+			$this->cpt = new RBM_CPT_Projects();
+			
 		}
 		
 		/**
@@ -194,43 +216,43 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 			
 			wp_register_style(
 				'cpt-projects',
-				cpt_projects_URL . 'assets/css/style.css',
+				CPT_Projects_URL . 'assets/css/style.css',
 				null,
-				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : cpt_projects_VER
+				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : CPT_Projects_VER
 			);
 			
 			wp_register_script(
 				'cpt-projects',
-				cpt_projects_URL . 'assets/js/script.js',
+				CPT_Projects_URL . 'assets/js/script.js',
 				array( 'jquery' ),
-				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : cpt_projects_VER,
+				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : CPT_Projects_VER,
 				true
 			);
 			
 			wp_localize_script( 
 				'cpt-projects',
-				'cptprojects',
+				'cPTProjects',
 				apply_filters( 'cpt_projects_localize_script', array() )
 			);
 			
 			wp_register_style(
 				'cpt-projects-admin',
-				cpt_projects_URL . 'assets/css/admin.css',
+				CPT_Projects_URL . 'assets/css/admin.css',
 				null,
-				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : cpt_projects_VER
+				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : CPT_Projects_VER
 			);
 			
 			wp_register_script(
 				'cpt-projects-admin',
-				cpt_projects_URL . 'assets/js/admin.js',
+				CPT_Projects_URL . 'assets/js/admin.js',
 				array( 'jquery' ),
-				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : cpt_projects_VER,
+				defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : CPT_Projects_VER,
 				true
 			);
 			
 			wp_localize_script( 
 				'cpt-projects-admin',
-				'cptprojects',
+				'cPTProjects',
 				apply_filters( 'cpt_projects_localize_admin_script', array() )
 			);
 			
@@ -241,13 +263,13 @@ if ( ! class_exists( 'cpt_projects' ) ) {
 } // End Class Exists Check
 
 /**
- * The main function responsible for returning the one true cpt_projects
+ * The main function responsible for returning the one true CPT_Projects
  * instance to functions everywhere
  *
  * @since	  1.0.0
- * @return	  \cpt_projects The one true cpt_projects
+ * @return	  \CPT_Projects The one true CPT_Projects
  */
-add_action( 'plugins_loaded', 'cpt_projects_load' );
+add_action( 'plugins_loaded', 'cpt_projects_load', 999 );
 function cpt_projects_load() {
 
 	require_once __DIR__ . '/core/cpt-projects-functions.php';

@@ -4,8 +4,8 @@
  *
  * @since	  1.0.0
  *
- * @package	cpt_projects
- * @subpackage cpt_projects/core
+ * @package	CPT_Projects
+ * @subpackage CPT_Projects/core
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	die;
@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since		1.0.0
  *
- * @return		cpt_projects
+ * @return		CPT_Projects
  */
 function CPTPROJECTS() {
-	return cpt_projects::instance();
+	return CPT_Projects::instance();
 }
