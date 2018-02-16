@@ -17,7 +17,7 @@ class RBM_CPT_Projects extends RBM_CPT {
 	public $post_args = array(
 		'hierarchical' => false,
 		'supports'     => array( 'title', 'editor', 'author', 'thumbnail' ),
-		'has_archive'  => true,
+		'has_archive'  => false,
 		'rewrite'      => array(
 			'slug'       => 'project',
 			'with_front' => false,
